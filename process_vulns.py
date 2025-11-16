@@ -48,6 +48,9 @@ def process_yaml_file(filepath, data_dir, log_file):
                 f.write(f"{filepath}\n")
             return
 
+        if repo_url.endswith('.git'):
+            repo_url = repo_url[:-4]
+
         # Create full commit URLs
         if commit_introduced:
             commit_introduced = f"{repo_url}/commit/{commit_introduced}"
