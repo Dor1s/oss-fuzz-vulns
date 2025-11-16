@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import re
 
@@ -8,7 +9,7 @@ def process_yaml_file(filepath, data_dir, log_file):
         with open(filepath, 'r') as f:
             data = yaml.safe_load(f)
     except yaml.YAMLError as e:
-        print(f"Error parsing YAML file: {filepath}\n{e}")
+        print(f"Error parsing YAML file: {filepath}\n{e}", file=sys.stderr)
         return
 
     # Extract required values
@@ -27,6 +28,7 @@ def process_yaml_file(filepath, data_dir, log_file):
         package_name = data['affected'][0]['package']['name']
 
         if 'ranges' not in data['affected'][0]:
+            print(f"Skipping {filepath} because 'ranges' key is missing.", file=sys.stderr)
             return
 
         repo_url = None
@@ -76,7 +78,7 @@ def process_yaml_file(filepath, data_dir, log_file):
             f.write(output_content)
 
     except (KeyError, IndexError, TypeError) as e:
-        print(f"Error processing file: {filepath}\n{e}")
+        print(f"Error processing file: {filepath}\n{e}", file=sys.stderr)
 
 def main():
     """Main function to traverse the vulns directory and process files."""
