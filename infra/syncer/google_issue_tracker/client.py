@@ -32,13 +32,16 @@ HttpError = errors.HttpError
 UnknownApiNameOrVersion = errors.UnknownApiNameOrVersion
 
 
-def build_http():
+def build_http(service_account=_IMPERSONATED_SERVICE_ACCOUNT):
   """Builds a httplib2.Http."""
-  source_credentials, _ = google.auth.default()
-  credentials = impersonated_credentials.Credentials(
-      source_credentials=source_credentials,
-      target_principal=_IMPERSONATED_SERVICE_ACCOUNT,
-      target_scopes=[_SCOPE])
+  if service_account:
+    source_credentials, _ = google.auth.default()
+    credentials = impersonated_credentials.Credentials(
+        source_credentials=source_credentials,
+        target_principal=service_account,
+        target_scopes=[_SCOPE])
+  else:
+    credentials, _ = google.auth.default(scopes=[_SCOPE])
 
   return google_auth_httplib2.AuthorizedHttp(
       credentials, http=httplib2.Http(timeout=_REQUEST_TIMEOUT))
@@ -57,8 +60,9 @@ def _call_discovery(api, http):
       static_discovery=False)
 
 
-def build(api='issuetracker', http=None):
+def build(api='issuetracker', http=None,
+          service_account=_IMPERSONATED_SERVICE_ACCOUNT):
   """Builds a google api client for buganizer."""
   if not http:
-    http = build_http()
+    http = build_http(service_account=service_account)
   return _call_discovery(api, http)

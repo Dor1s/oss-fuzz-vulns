@@ -22,6 +22,9 @@ from google.auth import exceptions
 from . import client
 
 _NUM_RETRIES = 3
+# OSS-Fuzz service account.
+_IMPERSONATED_SERVICE_ACCOUNT = (
+    '877343783628-compute@developer.gserviceaccount.com')
 
 
 class IssueAccessLevel(str, enum.Enum):
@@ -46,14 +49,15 @@ class IssueTrackerPermissionError(IssueTrackerError):
 class IssueTracker:
   """Google issue tracker implementation."""
 
-  def __init__(self, http_client):
+  def __init__(self, http_client, service_account=_IMPERSONATED_SERVICE_ACCOUNT):
     self._client = http_client
+    self._service_account = service_account
 
   @property
   def client(self):
     """HTTP Client."""
     if self._client is None:
-      self._client = client.build()
+      self._client = client.build(service_account=self._service_account)
     return self._client
 
   def _execute(self, request):
@@ -64,8 +68,9 @@ class IssueTracker:
         return request.execute(num_retries=_NUM_RETRIES, http=http)
       except exceptions.RefreshError:
         # Rebuild client and retry request.
-        http = client.build_http()
-        self._client = client.build('issuetracker', http=http)
+        http = client.build_http(service_account=self._service_account)
+        self._client = client.build('issuetracker', http=http,
+                                    service_account=self._service_account)
         return request.execute(num_retries=_NUM_RETRIES, http=http)
       except client.HttpError as e:
         if e.resp.status == 404:
